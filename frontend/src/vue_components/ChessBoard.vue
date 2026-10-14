@@ -32,11 +32,31 @@ const game = reactive(createInitialGameState())
 const selectedSquare = ref<Square | null>(null)
 const legalMoves = ref<Square[]>([])
 
+const positionHistory = ref<string[]>([
+  getFen(game),
+])
+
+const currentPositionIndex = ref(0)
+
+const isLatestPosition = computed(
+    () => currentPositionIndex.value === positionHistory.value.length - 1,
+)
+
+const canGoBack = computed(
+    () => currentPositionIndex.value > 0,
+)
+
+const canGoForward = computed(
+    () => currentPositionIndex.value < positionHistory.value.length - 1,
+)
+
 async function selectSquare(rank: number, file: string) {
+  if (!isLatestPosition.value) return
+
   const row = 8 - rank
   const col = files.indexOf(file)
 
-  const square = { row, col }
+  const square = {row, col}
 
   const piece = game.board[row]![col]
   if (piece && piece!.color === game.turn) {
@@ -76,6 +96,7 @@ async function selectSquare(rank: number, file: string) {
 
     // Apply White's move
     Object.assign(game, loadFen(moveResponse.fen))
+    recordPosition(moveResponse.fen)
 
     selectedSquare.value = null
     legalMoves.value = []
@@ -88,15 +109,58 @@ async function selectSquare(rank: number, file: string) {
 
     // Apply Black's move
     Object.assign(game, loadFen(analysisResponse.fen))
+    recordPosition(analysisResponse.fen)
   }
-
-
-
 }
 
 function handleRightClick(event: MouseEvent) {
   event.preventDefault()
   selectedSquare.value = null
+}
+
+function recordPosition(fen: string) {
+  // Discard future positions if a new line starts
+  positionHistory.value = positionHistory.value.slice(
+      0,
+      currentPositionIndex.value + 1,
+  )
+
+  positionHistory.value.push(fen)
+  currentPositionIndex.value = positionHistory.value.length - 1
+}
+
+function goToPosition(index: number) {
+  if (index < 0 || index >= positionHistory.value.length) {
+    return
+  }
+
+  currentPositionIndex.value = index
+
+  Object.assign(
+      game,
+      loadFen(positionHistory.value[index]!),
+  )
+
+  selectedSquare.value = null
+  legalMoves.value = []
+}
+
+function goBack() {
+  goToPosition(currentPositionIndex.value - 1)
+}
+
+function goForward() {
+  goToPosition(currentPositionIndex.value + 1)
+}
+
+function undoLastTurn() {
+  if (currentPositionIndex.value === 0) return
+
+  const targetIndex = Math.max(0, currentPositionIndex.value - 2)
+  goToPosition(targetIndex)
+
+  // Remove the undone positions so they aren't part of the active game.
+  positionHistory.value = positionHistory.value.slice(0, targetIndex + 1)
 }
 
 // true = White's perspective
@@ -169,6 +233,27 @@ const displayedRanks = computed(() =>
       </div>
     </div>
   </div>
+  <div class="info-box">
+    <div class="history-controls">
+      <button @click="goBack" :disabled="!canGoBack">
+        Previous
+      </button>
+
+      <span>
+        Position {{ currentPositionIndex + 1 }}
+        / {{ positionHistory.length }}
+      </span>
+
+      <button @click="goForward" :disabled="!canGoForward">
+        Next
+      </button>
+
+      <button @click="undoLastTurn" :disabled="!isLatestPosition || currentPositionIndex === 0">
+        Undo Last Turn
+      </button>
+    </div>
+  </div>
+
 </template>
 
 <style scoped>
