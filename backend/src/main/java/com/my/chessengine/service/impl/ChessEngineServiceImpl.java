@@ -30,7 +30,11 @@ public class ChessEngineServiceImpl implements ChessEngineService {
                 engine.printBoard();
 
 
-                return new AnalysisResponse(move.toString(), engine.toFen(), 0d, analysisRequest.depth());
+                return new AnalysisResponse(
+                        move.toString(),
+                        engine.toFen(), 0d, analysisRequest.depth(),
+                        engine.getGameStatus()
+                );
             } catch (IllegalArgumentException e) {
                 throw new ChessEngineIllegalArgument(e.getMessage());
             }
@@ -104,7 +108,8 @@ public class ChessEngineServiceImpl implements ChessEngineService {
             game.makeMove(moveToMake);
 
             return new MakeMoveResponse(
-                    game.toFen()
+                    game.toFen(),
+                    game.getGameStatus()
             );
         } catch (IllegalArgumentException e) {
             throw new ChessEngineIllegalArgument(e.getMessage());

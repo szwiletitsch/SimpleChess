@@ -8,6 +8,7 @@ export interface AnalysisResponse {
     fen: string;
     eval: number;
     depth: number;
+    status: GameStatus;
 }
 
 export interface LegalMovesRequest {
@@ -27,4 +28,11 @@ export interface MakeMoveRequest {
 
 export interface MakeMoveResponse {
     fen: string
+    status: GameStatus
 }
+
+export type GameStatus =
+    | 'IN_PROGRESS'
+    | 'CHECK'
+    | 'CHECKMATE'
+    | 'STALEMATE'

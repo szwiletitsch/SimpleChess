@@ -1,6 +1,7 @@
 package com.my.chessengine.api.dto;
 
 public record MakeMoveResponse(
-        String fen
+        String fen,
+        GameStatus status
 ) {
 }

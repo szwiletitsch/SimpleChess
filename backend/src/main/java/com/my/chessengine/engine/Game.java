@@ -1,5 +1,7 @@
 package com.my.chessengine.engine;
 
+import com.my.chessengine.api.dto.GameStatus;
+
 import java.util.*;
 
 public class Game {
@@ -929,6 +931,17 @@ public class Game {
         isWhitesTurn = !isWhitesTurn;
 
         return undoState;
+    }
+
+    public GameStatus getGameStatus() {
+        List<Move> moves = generateLegalMoves();
+        boolean inCheck = isKingInCheck(isWhitesTurn);
+
+        if (moves.isEmpty()) {
+            return inCheck ? GameStatus.CHECKMATE : GameStatus.STALEMATE;
+        }
+
+        return inCheck ? GameStatus.CHECK : GameStatus.IN_PROGRESS;
     }
 
     // ************************************************

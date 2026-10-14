@@ -4,6 +4,7 @@ public record AnalysisResponse(
         String bestMove,
         String fen,
         double eval,
-        int depth
+        int depth,
+        GameStatus status
 ) {
 }

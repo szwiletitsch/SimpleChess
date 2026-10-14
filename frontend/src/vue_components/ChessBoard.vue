@@ -4,6 +4,7 @@ import {computed, reactive, ref} from 'vue'
 import {createInitialGameState, getFen, loadFen} from '@/chess_logic/game'
 import type {Square} from "@/chess_logic/types.ts";
 import {analyze, getLegalMoves, makeMove} from "@/api/engineApi.ts";
+import type {GameStatus} from "@/api/dto/engineDTO.ts";
 
 // required for drawing chess field
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
@@ -31,6 +32,7 @@ const pieceSymbols = {
 const game = reactive(createInitialGameState())
 const selectedSquare = ref<Square | null>(null)
 const legalMoves = ref<Square[]>([])
+const gameStatus = ref<GameStatus>('IN_PROGRESS')
 
 const positionHistory = ref<string[]>([
   getFen(game),
@@ -52,6 +54,10 @@ const canGoForward = computed(
 
 async function selectSquare(rank: number, file: string) {
   if (!isLatestPosition.value) return
+  if (gameStatus.value === 'CHECKMATE' ||
+      gameStatus.value === 'STALEMATE') {
+    return
+  }
 
   const row = 8 - rank
   const col = files.indexOf(file)
@@ -98,6 +104,13 @@ async function selectSquare(rank: number, file: string) {
     Object.assign(game, loadFen(moveResponse.fen))
     recordPosition(moveResponse.fen)
 
+    gameStatus.value = moveResponse.status
+
+    if (moveResponse.status === 'CHECKMATE' ||
+        moveResponse.status === 'STALEMATE') {
+      return
+    }
+
     selectedSquare.value = null
     legalMoves.value = []
 
@@ -110,6 +123,13 @@ async function selectSquare(rank: number, file: string) {
     // Apply Black's move
     Object.assign(game, loadFen(analysisResponse.fen))
     recordPosition(analysisResponse.fen)
+
+    gameStatus.value = analysisResponse.status
+
+    if (analysisResponse.status === 'CHECKMATE' ||
+        analysisResponse.status === 'STALEMATE') {
+      return
+    }
   }
 }
 
@@ -253,6 +273,18 @@ const displayedRanks = computed(() =>
       </button>
     </div>
   </div>
+
+  <p v-if="gameStatus === 'CHECKMATE'">
+    Checkmate!
+  </p>
+
+  <p v-else-if="gameStatus === 'STALEMATE'">
+    Draw by stalemate.
+  </p>
+
+  <p v-else-if="gameStatus === 'CHECK'">
+    Check!
+  </p>
 
 </template>
 
