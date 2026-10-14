@@ -183,6 +183,45 @@ function undoLastTurn() {
   positionHistory.value = positionHistory.value.slice(0, targetIndex + 1)
 }
 
+function getCapturedPieces(color: 'white' | 'black') {
+  const startingCounts = {
+    pawn: 8,
+    knight: 2,
+    bishop: 2,
+    rook: 2,
+    queen: 1,
+    king: 1
+  }
+
+  const currentCounts = {
+    pawn: 0,
+    knight: 0,
+    bishop: 0,
+    rook: 0,
+    queen: 0,
+    king: 1
+  }
+
+  for (const piece of game.board.flat()) {
+    if (piece?.color === color) {
+      currentCounts[piece.type]++
+    }
+  }
+
+  const symbols = pieceSymbols[color]
+  const captured: string[] = []
+
+  for (const type of Object.keys(startingCounts) as (keyof typeof startingCounts)[]) {
+    const missing = Math.max(0, startingCounts[type] - currentCounts[type])
+
+    for (let i = 0; i < missing; i++) {
+      captured.push(symbols[type])
+    }
+  }
+
+  return captured.join('')
+}
+
 // true = White's perspective
 // false = Black's perspective
 const whitesPerspective = true
@@ -285,6 +324,15 @@ const displayedRanks = computed(() =>
   <p v-else-if="gameStatus === 'CHECK'">
     Check!
   </p>
+  <div class="captured-pieces">
+    <span>{{ getCapturedPieces('black') }}</span>
+  </div>
+
+  <!-- Your existing chessboard -->
+
+  <div class="captured-pieces">
+    <span>{{ getCapturedPieces('white') }}</span>
+  </div>
 
 </template>
 
